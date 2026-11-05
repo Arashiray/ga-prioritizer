@@ -1,0 +1,19 @@
+{
+  "name": "總務神盾：指揮官決策系統",
+  "short_name": "總務神盾",
+  "description": "專為學校總務主任打造的百萬工程守護與庶務攔截神盾",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090d16",
+  "theme_color": "#0f172a",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

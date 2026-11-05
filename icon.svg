@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <path d="M256 70 L400 134 C400 290 330 388 256 442 C182 388 112 290 112 134 Z" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="20" stroke-linejoin="round" filter="url(#glow)" />
+  <path d="M256 110 L370 162 C370 286 312 360 256 404 C200 360 142 286 142 162 Z" 
+        fill="url(#shieldGrad)" opacity="0.18" />
+  <polygon points="270,150 200,270 250,270 230,370 320,240 266,240" fill="#fcd34d" filter="url(#glow)" />
+</svg>
