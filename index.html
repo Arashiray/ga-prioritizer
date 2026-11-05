@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>總務主任任務緊急度診斷器 | GA Prioritizer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    /* 隱藏滾動條但保持滾動 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased flex flex-col pb-12">
+
+  <!-- 頂部導航 -->
+  <header class="bg-slate-800/90 backdrop-blur sticky top-0 z-30 border-b border-slate-700/80 px-4 py-3.5 flex items-center justify-between shadow-md">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
+        <i class="ph-bold ph-shield-check text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+          總務主任指揮台
+          <span class="text-[10px] font-semibold bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded border border-rose-500/30">防拖延版</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">放下板手・主政標案・杜絕庶務</p>
+      </div>
+    </div>
+    <button onclick="clearAllTasks()" class="text-xs text-slate-400 hover:text-rose-400 p-2 rounded-lg hover:bg-slate-700/50 transition" title="清空所有任務">
+      <i class="ph ph-trash text-lg"></i>
+    </button>
+  </header>
+
+  <!-- 主內容容器 -->
+  <main class="flex-1 max-w-xl w-full mx-auto p-4 space-y-4">
+
+    <!-- 警示標語卡 -->
+    <div class="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-purple-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3 shadow-inner">
+      <div class="p-2 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 mt-0.5">
+        <i class="ph-fill ph-warning-octagon text-lg"></i>
+      </div>
+      <div class="text-xs space-y-1">
+        <div class="font-bold text-amber-200">主任防拖延鐵律</div>
+        <p class="text-slate-300 leading-relaxed">
+          修廁所只要 20 分鐘換零件，但<span class="text-rose-300 font-semibold underline decoration-rose-500/50">非山非市、無障礙等重大標案</span>閒置一個月會導致預算被收回甚至追究疏失！請把上午精華腦力留給標案，庶務一律派工外包。
+        </p>
+      </div>
+    </div>
+
+    <!-- 輸入區塊 -->
+    <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl space-y-3">
+      <div class="flex items-center justify-between">
+        <label for="taskInput" class="text-xs font-bold tracking-wide uppercase text-slate-300 flex items-center gap-1.5">
+          <i class="ph-bold ph-pencil-simple-line text-indigo-400"></i>
+          輸入手頭任務（支援多行或用語音輸入）
+        </label>
+        <span class="text-[11px] text-slate-400">一行一件事</span>
+      </div>
+
+      <textarea id="taskInput" rows="3" 
+        placeholder="例如：&#10;三年級廁所水龍頭漏水&#10;非山非市工程報府採最有利標公文&#10;幼兒園無障礙勘查建築師催進度&#10;教育局填報防震演練成果" 
+        class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"></textarea>
+
+      <!-- 快速範例按鈕 -->
+      <div class="flex flex-wrap gap-1.5 pt-1">
+        <span class="text-[11px] text-slate-400 self-center mr-1">快捷代入：</span>
+        <button onclick="insertSample('非山非市工程報府核定最有利標公文')" class="text-[11px] bg-slate-700/60 hover:bg-slate-700 text-rose-300 px-2 py-1 rounded-lg border border-rose-500/30 transition">非山非市公文</button>
+        <button onclick="insertSample('幼兒園無障礙工程招標書圖審查')" class="text-[11px] bg-slate-700/60 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg border border-amber-500/30 transition">無障礙工程</button>
+        <button onclick="insertSample('二樓女廁馬桶堵塞漏水')" class="text-[11px] bg-slate-700/60 hover:bg-slate-700 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30 transition">修廁所馬桶</button>
+        <button onclick="insertSample('年度校園消防安全設備檢修申報')" class="text-[11px] bg-slate-700/60 hover:bg-slate-700 text-sky-300 px-2 py-1 rounded-lg border border-sky-500/30 transition">消防申報</button>
+      </div>
+
+      <button onclick="processInputTasks()" 
+        class="w-full py-3 bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition duration-150">
+        <i class="ph-bold ph-lightning text-lg"></i>
+        即時診斷優先順序與派工策略
+      </button>
+    </div>
+
+    <!-- 任務統計儀表 -->
+    <div class="grid grid-cols-4 gap-2 text-center" id="statDashboard">
+      <div class="bg-rose-500/10 border border-rose-500/30 p-2.5 rounded-xl">
+        <div class="text-[10px] text-rose-400 font-semibold">P0 重大要務</div>
+        <div class="text-xl font-black text-rose-300 mt-0.5" id="countP0">0</div>
+      </div>
+      <div class="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl">
+        <div class="text-[10px] text-amber-400 font-semibold">P1 重大管理</div>
+        <div class="text-xl font-black text-amber-300 mt-0.5" id="countP1">0</div>
+      </div>
+      <div class="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
+        <div class="text-[10px] text-emerald-400 font-semibold">P2 庶務派工</div>
+        <div class="text-xl font-black text-emerald-300 mt-0.5" id="countP2">0</div>
+      </div>
+      <div class="bg-slate-700/30 border border-slate-700 p-2.5 rounded-xl">
+        <div class="text-[10px] text-slate-400 font-semibold">P3 雜件延後</div>
+        <div class="text-xl font-black text-slate-300 mt-0.5" id="countP3">0</div>
+      </div>
+    </div>
+
+    <!-- 判定結果分類清單 -->
+    <div class="space-y-4 pt-1" id="resultsContainer">
+      <!-- P0 容器 -->
+      <section id="sectionP0" class="space-y-2.5">
+        <div class="flex items-center justify-between text-xs font-bold text-rose-400 uppercase tracking-wider px-1">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            🔴 P0：致命要務（主任親自掌舵・今日必推）
+          </span>
+          <span class="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full">黃金 90 分鐘專案</span>
+        </div>
+        <div id="listP0" class="space-y-2.5"></div>
+      </section>
+
+      <!-- P2 容器 (特別放在第二順位，提供強烈阻擋警報) -->
+      <section id="sectionP2" class="space-y-2.5">
+        <div class="flex items-center justify-between text-xs font-bold text-emerald-400 uppercase tracking-wider px-1">
+          <span class="flex items-center gap-1.5">
+            <i class="ph-fill ph-hand-palm text-emerald-400 text-sm"></i>
+            🟢 P2：校園庶務（🚫 主任嚴禁親手修理・一律派工）
+          </span>
+          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">一鍵複製派工詞</span>
+        </div>
+        <div id="listP2" class="space-y-2.5"></div>
+      </section>
+
+      <!-- P1 容器 -->
+      <section id="sectionP1" class="space-y-2.5">
+        <div class="flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider px-1">
+          <span class="flex items-center gap-1.5">
+            <i class="ph-bold ph-calendar-check text-amber-400"></i>
+            🟡 P1：重大管理（審核把關・排程追蹤）
+          </span>
+          <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">批閱與決策</span>
+        </div>
+        <div id="listP1" class="space-y-2.5"></div>
+      </section>
+
+      <!-- P3 容器 -->
+      <section id="sectionP3" class="space-y-2.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+          <span class="flex items-center gap-1.5">
+            <i class="ph-bold ph-archive text-slate-400"></i>
+            ⚪ P3：零碎雜件（下班前批次處理或存查）
+          </span>
+        </div>
+        <div id="listP3" class="space-y-2"></div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- 派工話術複製彈出 Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-emerald-300 border border-emerald-500/50 px-4 py-2 rounded-xl text-xs font-semibold shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50">
+    <i class="ph-bold ph-check-circle text-base"></i>
+    <span id="toastMsg">已複製派工話術！可直接貼到 LINE 交代工友/包商</span>
+  </div>
+
+  <script>
+    // 專屬總務主任關鍵字智能規則庫
+    const RULES = {
+      p0: {
+        keywords: [
+          '非山非市', '無障礙', '最有利標', '標案', '採購', '招標', '開標', '評選', '決標', '驗收', 
+          '工程', '壁癌', '耐震', '老舊廁所整修', '中央補助', '核銷', '預算保留', '補助款', '結報',
+          '倒塌', '漏電', '停電重大', '高壓變壓器', '地層下陷', '危險建築', '圍牆龜裂'
+        ],
+        actionPrefix: '【主任親自推進】鎖定今天第一順位，啟動 5 分鐘微任務！'
+      },
+      p1: {
+        keywords: [
+          '消防', '公安申報', '公共安全', '昇降機', '水質', '飲用水', '高壓電檢', '保全合約', 
+          '清潔合約', '午餐合約', '考績', '預算編列', '校務會議', '總務會議', '財產盤點', '主計'
+        ],
+        actionPrefix: '【排程審核】交辦組長/幹事擬稿，主任排定時間批閱。'
+      },
+      p2: {
+        keywords: [
+          '廁所', '馬桶', '水龍頭', '漏水', '通水管', '小便斗', '燈泡', '燈管', '日光燈', 
+          '冷氣', '投影機', '門窗', '紗窗', '喇叭鎖', '跳電', '水電', '插座', '割草', '修剪樹木', 
+          '搬桌椅', '借場地', '飲水機濾心', '洗手台', '鐵捲門'
+        ],
+        actionPrefix: '【🚫 嚴禁親自動手】立刻派工！交給工友先生或特約水電廠商！'
+      },
+      p3: {
+        keywords: [
+          '宣導', '轉知', '研習', '講座', '會議出席', '調查表', '填報', '成果冊', '交通安全報表', 
+          '綠色採購比例', '統計報表', '型錄', '推廣', '公文存查'
+        ],
+        actionPrefix: '【批次消滅】下班前 30 分鐘集中填報或請幹事協處。'
+      }
+    };
+
+    let tasks = [];
+
+    // 初始化讀取 LocalStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('ga_prioritizer_tasks');
+      if (saved) {
+        try {
+          tasks = JSON.parse(saved);
+          renderTasks();
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        // 預設示範資料
+        tasks = [
+          { id: 1, text: '非山非市學校設施設備計畫案—教室及樓梯防壁癌工程報府最有利標公文', level: 'p0', done: false, microStep: '打開公文檔案填上字號與分機，點選陳核校長（只需 5 分鐘）' },
+          { id: 2, text: '幼兒園無障礙工程招標需求書與預算書圖審查', level: 'p0', done: false, microStep: '致電委外建築師，確認預算書修訂完成送達時間' },
+          { id: 3, text: '二樓男廁小便斗嚴重堵塞漏水', level: 'p2', done: false, dispatchWord: '工友先生您好，二樓男廁小便斗漏水堵塞，請先掛上「故障檢修中」告示，若無法簡易排除請聯絡王水電行下午到校檢修，謝謝！' },
+          { id: 4, text: '三年級教室冷氣遙控器失效與濾網清洗要求', level: 'p2', done: false, dispatchWord: '三年級教室冷氣問題已錄案，請事務組長排入本週工友檢視或維護廠商排程。' },
+          { id: 5, text: '校園消防安全設備定期檢修與申報公文核章', level: 'p1', done: false },
+          { id: 6, text: '教育局交通安全成果月報填報作業', level: 'p3', done: false }
+        ];
+        saveAndRender();
+      }
+    });
+
+    function insertSample(str) {
+      const input = document.getElementById('taskInput');
+      if (input.value.trim()) {
+        input.value += '\n' + str;
+      } else {
+        input.value = str;
+      }
+      input.focus();
+    }
+
+    function evaluateTask(text) {
+      const lower = text.toLowerCase();
+      
+      // 先比對 P0 (重大標案/致命危機優先度最高)
+      for (const kw of RULES.p0.keywords) {
+        if (lower.includes(kw)) {
+          let microStep = '今天只要花 5 分鐘完成一個極小動作（如：發函、打電話確認進度或下載範本）。';
+          if (lower.includes('非山非市') || lower.includes('最有利標') || lower.includes('壁癌')) {
+            microStep = '打開預備好的公文檔案填上文號與承辦分機，點選陳核校長報府。';
+          } else if (lower.includes('無障礙')) {
+            microStep = '致電建築師確認預算書圖何時送達，或排定招標審查會議日期。';
+          }
+          return { level: 'p0', microStep };
+        }
+      }
+
+      // 再比對 P2 (日常水電/修繕 - 特別阻擋主任親自落場)
+      for (const kw of RULES.p2.keywords) {
+        if (lower.includes(kw)) {
+          const dispatchWord = `【派工通知】總務處通報：${text}，請工友先生/水電包商協助前往勘查檢修，若需購置零件請先報價，謝謝！`;
+          return { level: 'p2', dispatchWord };
+        }
+      }
+
+      // 再比對 P1 (法定管理/申報/合約)
+      for (const kw of RULES.p1.keywords) {
+        if (lower.includes(kw)) return { level: 'p1' };
+      }
+
+      // 再比對 P3 (瑣碎宣導/填表)
+      for (const kw of RULES.p3.keywords) {
+        if (lower.includes(kw)) return { level: 'p3' };
+      }
+
+      // 預設為 P1
+      return { level: 'p1' };
+    }
+
+    function processInputTasks() {
+      const input = document.getElementById('taskInput');
+      const lines = input.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) return;
+
+      lines.forEach(line => {
+        const evalResult = evaluateTask(line);
+        tasks.unshift({
+          id: Date.now() + Math.random(),
+          text: line,
+          level: evalResult.level,
+          microStep: evalResult.microStep || null,
+          dispatchWord: evalResult.dispatchWord || null,
+          done: false
+        });
+      });
+
+      input.value = '';
+      saveAndRender();
+    }
+
+    function toggleTask(id) {
+      const t = tasks.find(x => x.id === id);
+      if (t) {
+        t.done = !t.done;
+        saveAndRender();
+      }
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(x => x.id !== id);
+      saveAndRender();
+    }
+
+    function clearAllTasks() {
+      if (confirm('確定要清空所有任務嗎？')) {
+        tasks = [];
+        saveAndRender();
+      }
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已複製派工話術！可直接貼至 LINE 交代工友或廠商');
+      }).catch(err => {
+        alert('請手動複製：\n' + text);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('ga_prioritizer_tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    function renderTasks() {
+      const counts = { p0: 0, p1: 0, p2: 0, p3: 0 };
+      const lists = {
+        p0: document.getElementById('listP0'),
+        p1: document.getElementById('listP1'),
+        p2: document.getElementById('listP2'),
+        p3: document.getElementById('listP3')
+      };
+
+      // 清空
+      Object.values(lists).forEach(el => el.innerHTML = '');
+
+      tasks.forEach(t => {
+        if (!t.done) counts[t.level]++;
+
+        const card = document.createElement('div');
+        const isDoneClass = t.done ? 'opacity-40 line-through' : '';
+
+        if (t.level === 'p0') {
+          card.className = `bg-gradient-to-br from-rose-950/40 via-slate-800 to-slate-800 border-2 border-rose-500/60 rounded-xl p-3.5 shadow-lg relative ${isDoneClass}`;
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start gap-2.5">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" 
+                  class="mt-1 w-4 h-4 rounded text-rose-600 focus:ring-rose-500 bg-slate-900 border-slate-700 cursor-pointer">
+                <div>
+                  <div class="text-sm font-bold text-rose-200 tracking-wide">${escapeHtml(t.text)}</div>
+                  ${t.microStep ? `
+                    <div class="mt-2 bg-rose-500/10 border border-rose-500/30 rounded-lg p-2 text-xs text-rose-300 flex items-start gap-1.5">
+                      <i class="ph-bold ph-arrow-elbow-down-right text-rose-400 mt-0.5"></i>
+                      <div><strong class="font-bold text-white">今日 5 分鐘第一步：</strong>${escapeHtml(t.microStep)}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-rose-400 p-1 text-sm"><i class="ph ph-x"></i></button>
+            </div>
+          `;
+          lists.p0.appendChild(card);
+
+        } else if (t.level === 'p2') {
+          card.className = `bg-slate-800/90 border border-emerald-500/40 rounded-xl p-3 shadow relative ${isDoneClass}`;
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start gap-2.5 flex-1">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" 
+                  class="mt-1 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-900 border-slate-700 cursor-pointer">
+                <div class="flex-1">
+                  <div class="text-sm font-semibold text-slate-200 flex items-center gap-1.5 flex-wrap">
+                    ${escapeHtml(t.text)}
+                    <span class="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.2 rounded border border-red-500/30 font-bold">🚫 主任勿動手修！</span>
+                  </div>
+                  ${t.dispatchWord ? `
+                    <div class="mt-2 bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-2 text-xs text-emerald-300 flex items-center justify-between gap-2">
+                      <span class="truncate flex-1"><strong>交辦話術：</strong>${escapeHtml(t.dispatchWord)}</span>
+                      <button onclick="copyToClipboard('${escapeJs(t.dispatchWord)}')" 
+                        class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-2 py-1 rounded text-[11px] font-bold shrink-0 flex items-center gap-1 shadow">
+                        <i class="ph-bold ph-copy"></i> 複製
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-rose-400 p-1 text-sm"><i class="ph ph-x"></i></button>
+            </div>
+          `;
+          lists.p2.appendChild(card);
+
+        } else if (t.level === 'p1') {
+          card.className = `bg-slate-800/80 border border-amber-500/30 rounded-xl p-3 shadow ${isDoneClass}`;
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start gap-2.5">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" 
+                  class="mt-1 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 bg-slate-900 border-slate-700 cursor-pointer">
+                <div>
+                  <div class="text-sm font-medium text-slate-200">${escapeHtml(t.text)}</div>
+                  <div class="text-[11px] text-amber-400/80 mt-1 flex items-center gap-1">
+                    <i class="ph-bold ph-clock"></i> 建議處置：交由事務組長/幹事草擬或檢核，排入每週固定時段批核。
+                  </div>
+                </div>
+              </div>
+              <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-rose-400 p-1 text-sm"><i class="ph ph-x"></i></button>
+            </div>
+          `;
+          lists.p1.appendChild(card);
+
+        } else {
+          card.className = `bg-slate-800/50 border border-slate-700/60 rounded-xl p-2.5 shadow ${isDoneClass}`;
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start gap-2.5">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" 
+                  class="mt-1 w-4 h-4 rounded text-slate-600 bg-slate-900 border-slate-700 cursor-pointer">
+                <div>
+                  <div class="text-xs text-slate-300">${escapeHtml(t.text)}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">下班前 30 分鐘批次處理或存查。</div>
+                </div>
+              </div>
+              <button onclick="deleteTask(${t.id})" class="text-slate-600 hover:text-rose-400 p-1 text-xs"><i class="ph ph-x"></i></button>
+            </div>
+          `;
+          lists.p3.appendChild(card);
+        }
+      });
+
+      // 更新統計數字
+      document.getElementById('countP0').innerText = counts.p0;
+      document.getElementById('countP1').innerText = counts.p1;
+      document.getElementById('countP2').innerText = counts.p2;
+      document.getElementById('countP3').innerText = counts.p3;
+
+      // 如果某分類為空，顯示提示
+      ['p0', 'p1', 'p2', 'p3'].forEach(lvl => {
+        if (lists[lvl].children.length === 0) {
+          lists[lvl].innerHTML = `<div class="text-[11px] text-slate-500 italic py-1.5 px-2">目前無此類別待辦任務</div>`;
+        }
+      });
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function escapeJs(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+  </script>
+</body>
+</html>
